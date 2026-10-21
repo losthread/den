@@ -1,0 +1,24 @@
+# Go
+/bin/
+*.exe
+*.exe~
+*.test
+*.out
+
+# Web
+/web/node_modules/
+/web/dist/
+
+# Local configuration
+.env
+.env.*
+!.env.example
+
+# Coverage and profiling
+coverage.out
+*.prof
+
+# OS and editor files
+.DS_Store
+.vscode/
+.idea/
