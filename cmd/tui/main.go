@@ -11,6 +11,7 @@ import (
 	"os"
 	"strings"
 
+	"den/shared/identity"
 	"den/tui"
 	_ "modernc.org/sqlite"
 )
@@ -49,17 +50,13 @@ func main() {
 		fmt.Fprintln(os.Stderr, "database migration:", err)
 		os.Exit(1)
 	}
-	for _, column := range []string{"encrypted_private_key", "salt", "nonce"} {
+	for _, column := range []string{"encrypted_private_key", "encryption_key", "salt", "nonce"} {
 		if _, err := db.Exec("ALTER TABLE identity ADD COLUMN " + column + " BLOB NOT NULL DEFAULT x''"); err != nil && !isDuplicateColumn(err) {
 			fmt.Fprintln(os.Stderr, "database migration:", err)
 			os.Exit(1)
 		}
 	}
-	if _, err := db.Exec(`
-		INSERT INTO identity (peer_id, username, public_key, encrypted_private_key, salt, nonce)
-		SELECT randomblob(16), 'anonymous', randomblob(32), x'', x'', x''
-		WHERE NOT EXISTS (SELECT 1 FROM identity)
-	`); err != nil {
+	if err := identity.CreateIdentity(db, nil); err != nil {
 		fmt.Fprintln(os.Stderr, "database identity:", err)
 		os.Exit(1)
 	}

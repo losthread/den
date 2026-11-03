@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"syscall"
 	"unsafe"
@@ -219,6 +218,10 @@ func submenu(title string, items []string, draw submenuRenderer) error {
 				exportIdentity()
 				continue
 			}
+			if title == "IDENTITY" && items[selected] == "Import Identity" {
+				importIdentity()
+				continue
+			}
 			if items[selected] == "Back" || title == "IDENTITY" && selected == len(items)-1 {
 				return nil
 			}
@@ -272,35 +275,56 @@ func renderUsernameChange() {
 func exportIdentity() {
 	home, err := os.UserHomeDir()
 	if err != nil {
+		identityMessage("Export failed: " + err.Error())
 		return
 	}
-	downloads := filepath.Join(home, "Downloads")
-	if runtime.GOOS == "windows" {
-		if userProfile := os.Getenv("USERPROFILE"); userProfile != "" {
-			downloads = filepath.Join(userProfile, "Downloads")
-		}
+	path := filepath.Join(home, "Downloads", "den-identity.json")
+	data, err := identity.Export(db)
+	if err == nil {
+		err = os.WriteFile(path, data, 0600)
 	}
-	path := filepath.Join(downloads, "den-identity.enc")
+	if err != nil {
+		identityMessage("Export failed: " + err.Error())
+		return
+	}
+	identityMessage("Identity exported to " + path)
+}
+
+func importIdentity() {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		identityMessage("Import failed: " + err.Error())
+		return
+	}
+	path := filepath.Join(home, "Downloads", "den-identity.json")
+	data, err := os.ReadFile(path)
+	if err == nil {
+		err = identity.Import(db, data)
+	}
+	if err != nil {
+		identityMessage("Import failed: " + err.Error())
+		return
+	}
+	identityMessage("Identity imported from " + path)
+}
+
+func identityMessage(message string) {
 	fmt.Print("\x1b[2J\x1b[H")
-	fmt.Println("EXPORT IDENTITY")
-	fmt.Println("────────────────────────────────────")
-	fmt.Printf("Suggested location:\n%s\n", path)
+	fmt.Println(message)
 	fmt.Println()
 	fmt.Println("Press any key to return")
-	var key [1]byte
-	_, _ = os.Stdin.Read(key[:])
+	_, _ = readKey()
 }
 
 // showPublicKey displays the public key screen.
+// showPublicKey displays the stored public key.
 func showPublicKey() {
-	fmt.Print("\x1b[2J\x1b[H")
-	fmt.Println("PUBLIC KEY")
-	fmt.Println("────────────────────────────────────")
-	fmt.Println("ed25519:ab82...f12e")
-	fmt.Println()
-	fmt.Println("Press any key to return")
-	var key [1]byte
-	_, _ = os.Stdin.Read(key[:])
+	key, err := identity.PublicKeyText(db)
+	if err != nil {
+		identityMessage("Unable to read public key: " + err.Error())
+		return
+	}
+	identityMessage("Public key (Ed25519): " + key)
 }
 
 // identityRender draws the identity submenu.

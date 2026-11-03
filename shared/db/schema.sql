@@ -3,6 +3,7 @@ CREATE TABLE if NOT EXISTS identity (
     username TEXT NOT NULL DEFAULT 'anonymous',
     public_key BLOB NOT NULL,
     encrypted_private_key BLOB NOT NULL DEFAULT x'',
+    encryption_key BLOB NOT NULL DEFAULT x'',
     salt BLOB NOT NULL DEFAULT x'',
     nonce BLOB NOT NULL DEFAULT x''
 );
