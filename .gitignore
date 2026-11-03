@@ -18,6 +18,11 @@
 coverage.out
 *.prof
 
+# SQLite
+*.db
+*.db-shm
+*.db-wal
+
 # OS and editor files
 .DS_Store
 .vscode/
