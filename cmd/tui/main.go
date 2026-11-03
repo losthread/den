@@ -63,6 +63,13 @@ func main() {
 		fmt.Fprintln(os.Stderr, "database identity:", err)
 		os.Exit(1)
 	}
+	if _, err := db.Exec(`
+		INSERT INTO settings (id)
+		SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM settings WHERE id = 1)
+	`); err != nil {
+		fmt.Fprintln(os.Stderr, "database settings:", err)
+		os.Exit(1)
+	}
 	tui.SetDB(db)
 
 	if err := tui.Run(); err != nil {

@@ -16,6 +16,7 @@ import (
 	"unsafe"
 
 	"den/shared/identity"
+	"den/shared/settings"
 )
 
 const banner = `
@@ -56,7 +57,41 @@ func toggleSetting(items []string, index int, on, off string) {
 }
 
 // SetDB configures the database used by the TUI.
-func SetDB(database *sql.DB) { db = database }
+func SetDB(database *sql.DB) {
+	db = database
+	if setting, err := settings.GetSettings(db); err == nil {
+		settingsOptions[0] = settingLabel("Bluetooth", setting.Bluetooth)
+		settingsOptions[1] = settingLabel("WebRTC", setting.WebRTC)
+		settingsOptions[2] = settingLabel("Mesh Relaying", setting.MeshRelaying)
+		settingsOptions[3] = fmt.Sprintf("Max Relay Hops      %d", setting.MaxRelayHops)
+		settingsOptions[4] = settingLabel("Peer Discovery", setting.PeerDiscovery)
+		settingsOptions[5] = settingLabel("Notifications", setting.Notifications)
+		settingsOptions[6] = fmt.Sprintf("Incoming Requests   %s", setting.IncomingRequests)
+		settingsOptions[7] = fmt.Sprintf("Timestamps          %s", setting.Timestamp)
+		use24HourTimestamps = setting.Timestamp == "24H"
+	}
+}
+
+func settingLabel(name string, enabled bool) string {
+	state := "OFF"
+	if enabled {
+		state = "ON"
+	}
+	return fmt.Sprintf("%-19s%s", name, state)
+}
+
+func saveSettings(items []string) {
+	if db == nil {
+		return
+	}
+	setting := settings.Settings{
+		Bluetooth: strings.HasSuffix(items[0], "ON"), WebRTC: strings.HasSuffix(items[1], "ON"),
+		MeshRelaying: strings.HasSuffix(items[2], "ON"), MaxRelayHops: int(items[3][len(items[3])-1] - '0'),
+		PeerDiscovery: strings.HasSuffix(items[4], "ON"), Notifications: strings.HasSuffix(items[5], "ON"),
+		IncomingRequests: strings.TrimSpace(items[6][len("Incoming Requests"):]), Timestamp: strings.TrimSpace(items[7][len("Timestamps"):]),
+	}
+	_ = settings.UpdateSettings(db, setting)
+}
 
 // Run starts the interactive terminal interface.
 func Run() error {
@@ -149,14 +184,17 @@ func submenu(title string, items []string, draw submenuRenderer) error {
 				switch selected {
 				case 0, 1, 2, 4, 5:
 					toggleSetting(items, selected, "ON", "OFF")
+					saveSettings(items)
 					continue
 				case 3:
 					hops := items[selected][len(items[selected])-1] - '0'
 					hops = hops%10 + 1
 					items[selected] = fmt.Sprintf("Max Relay Hops      %d", hops)
+					saveSettings(items)
 					continue
 				case 6:
 					toggleSetting(items, selected, "ACCEPT", "ASK")
+					saveSettings(items)
 					continue
 				case 7:
 					use24HourTimestamps = !use24HourTimestamps
@@ -165,6 +203,7 @@ func submenu(title string, items []string, draw submenuRenderer) error {
 					} else {
 						items[selected] = "Timestamps          12H"
 					}
+					saveSettings(items)
 					continue
 				}
 			}
