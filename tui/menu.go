@@ -29,7 +29,7 @@ const banner = `
 
 var options = []string{"Direct Chat", "Group Chat", "Identity", "Settings", "Quit"}
 var identityOptions = []string{"Change Username", "Show Public Key", "Export Identity", "Import Identity", "Back"}
-var settingsOptions = []string{"Bluetooth           ON", "WebRTC              ON", "Mesh Relaying       ON", "Max Relay Hops      5", "Peer Discovery      ON", "Incoming Requests   ASK", "Timestamps          12H", "Back"}
+var settingsOptions = []string{"Bluetooth           ON", "WebRTC              ON", "Mesh Relaying       ON", "Max Relay Hops      5", "Peer Discovery      ON", "Notifications       ON", "Incoming Requests   ASK", "Timestamps          12H", "Back"}
 
 var use24HourTimestamps bool
 var db *sql.DB
@@ -39,11 +39,11 @@ func currentUsername() string {
 	if db == nil {
 		return "anonymous"
 	}
-	username, _, _, err := identity.GetIdentity(db)
+	value, err := identity.GetIdentity(db)
 	if err != nil {
 		return "anonymous"
 	}
-	return username
+	return value.Username
 }
 
 // toggleSetting switches a setting between two labels.
@@ -147,7 +147,7 @@ func submenu(title string, items []string, draw submenuRenderer) error {
 		case "\r", "\n":
 			if title == "SETTINGS" {
 				switch selected {
-				case 0, 1, 2, 4:
+				case 0, 1, 2, 4, 5:
 					toggleSetting(items, selected, "ON", "OFF")
 					continue
 				case 3:
@@ -155,10 +155,10 @@ func submenu(title string, items []string, draw submenuRenderer) error {
 					hops = hops%10 + 1
 					items[selected] = fmt.Sprintf("Max Relay Hops      %d", hops)
 					continue
-				case 5:
+				case 6:
 					toggleSetting(items, selected, "ACCEPT", "ASK")
 					continue
-				case 6:
+				case 7:
 					use24HourTimestamps = !use24HourTimestamps
 					if use24HourTimestamps {
 						items[selected] = "Timestamps          24H"
@@ -286,10 +286,10 @@ func settingsRender(items []string, selected int) {
 	menuRender(items[:4], selected)
 	fmt.Println()
 	fmt.Printf("%sPRIVACY%s\n", white, reset)
-	menuRender(items[4:6], selected-4)
+	menuRender(items[4:7], selected-4)
 	fmt.Println()
 	fmt.Printf("%sAPPEARANCE%s\n", white, reset)
-	menuRender(items[6:], selected-6)
+	menuRender(items[7:], selected-7)
 	fmt.Println("────────────────────────────────────")
 }
 

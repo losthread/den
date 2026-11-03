@@ -23,16 +23,16 @@ func TestIdentityDatabaseOperations(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	username, peerID, publicKey, err := GetIdentity(db)
-	if err != nil || username != "anonymous" || len(peerID) != 1 || len(publicKey) != 1 {
-		t.Fatalf("GetIdentity() = %q, %x, %x, %v", username, peerID, publicKey, err)
+	value, err := GetIdentity(db)
+	if err != nil || value.Username != "anonymous" || len(value.PeerID) != 1 || len(value.PublicKey) != 1 {
+		t.Fatalf("GetIdentity() = %+v, %v", value, err)
 	}
 	if err := ChangeUsername(db, "  Alice  "); err != nil {
 		t.Fatal(err)
 	}
-	username, _, _, err = GetIdentity(db)
-	if err != nil || username != "Alice" {
-		t.Fatalf("updated username = %q, %v", username, err)
+	value, err = GetIdentity(db)
+	if err != nil || value.Username != "Alice" {
+		t.Fatalf("updated username = %q, %v", value.Username, err)
 	}
 	if err := ChangeUsername(db, "   "); err == nil {
 		t.Fatal("empty username accepted")

@@ -11,34 +11,37 @@ import (
 	"strings"
 )
 
-// GetIdentity returns the stored username, peer ID, and public key.
-func GetIdentity(db *sql.DB) (string, []byte, []byte, error) {
-	var username string
-	var peerID []byte
-	var publicKey []byte
+// Identity contains the user's local identity details.
+type Identity struct {
+	Username  string
+	PeerID    []byte
+	PublicKey []byte
+}
 
+// GetIdentity returns the stored identity.
+func GetIdentity(db *sql.DB) (Identity, error) {
+	var identity Identity
 	err := db.QueryRow(`
 		SELECT username, peer_id, public_key
 		FROM identity
 		LIMIT 1
-	`).Scan(&username, &peerID, &publicKey)
-
-	return username, peerID, publicKey, err
+	`).Scan(&identity.Username, &identity.PeerID, &identity.PublicKey)
+	return identity, err
 }
 
-// ChangeUsername updates the username when value is non-empty after trimming.
+// ChangeUsername updates the username when identity is non-empty after trimming.
 // ChangeUsername validates and stores a trimmed username.
-func ChangeUsername(db *sql.DB, value string) error {
-	value = strings.TrimSpace(value)
+func ChangeUsername(db *sql.DB, identity string) error {
+	identity = strings.TrimSpace(identity)
 
-	if value == "" {
+	if identity == "" {
 		return fmt.Errorf("username cannot be empty")
 	}
 
 	result, err := db.Exec(`
 		UPDATE identity
 		SET username = ?
-	`, value)
+	`, identity)
 	if err != nil {
 		return err
 	}

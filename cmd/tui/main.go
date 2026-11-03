@@ -45,6 +45,10 @@ func main() {
 		fmt.Fprintln(os.Stderr, "database schema:", err)
 		os.Exit(1)
 	}
+	if _, err := db.Exec("ALTER TABLE settings ADD COLUMN notifications INTEGER NOT NULL DEFAULT 1 CHECK (notifications IN (0, 1))"); err != nil && !isDuplicateColumn(err) {
+		fmt.Fprintln(os.Stderr, "database migration:", err)
+		os.Exit(1)
+	}
 	for _, column := range []string{"encrypted_private_key", "salt", "nonce"} {
 		if _, err := db.Exec("ALTER TABLE identity ADD COLUMN " + column + " BLOB NOT NULL DEFAULT x''"); err != nil && !isDuplicateColumn(err) {
 			fmt.Fprintln(os.Stderr, "database migration:", err)
